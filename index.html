@@ -1143,22 +1143,38 @@
     }
 
     .chat-panel-close {
-      width: 34px;
-      height: 34px;
-      border: none;
+      width: 44px;
+      height: 44px;
+      min-width: 44px;
+      border: 1.5px solid rgba(255, 255, 255, 0.45);
       border-radius: 50%;
-      background: rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.18);
       color: white;
-      font-size: 22px;
+      font-size: 28px;
+      font-weight: 300;
+      line-height: 1;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+      padding: 0;
     }
 
     .chat-panel-close:hover {
-      background: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.38);
+      transform: rotate(90deg);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+    }
+
+    .chat-panel-close:active {
+      transform: rotate(90deg) scale(0.92);
+    }
+
+    .chat-panel-close:focus-visible {
+      outline: 2px solid #fff;
+      outline-offset: 2px;
     }
 
     .chat-panel-body {
@@ -1375,6 +1391,7 @@
     }
 
     .chat-name-card {
+      position: relative;
       width: min(420px, 100%);
       background: white;
       border-radius: 24px;
@@ -1382,6 +1399,53 @@
       text-align: center;
       box-shadow: 0 30px 80px rgba(0, 0, 0, 0.25);
       animation: modalPop 0.3s ease both;
+    }
+
+    .chat-name-close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 36px;
+      height: 36px;
+      min-width: 36px;
+      border: 1.5px solid #e2e8f0;
+      border-radius: 50%;
+      background: #f8fafc;
+      color: #64748b;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      transition: background 0.2s, color 0.2s, transform 0.15s, border-color 0.2s;
+    }
+
+    .chat-name-close:hover {
+      background: #fee2e2;
+      color: #ef4444;
+      border-color: #fecaca;
+      transform: rotate(90deg);
+    }
+
+    .chat-name-close:active {
+      transform: rotate(90deg) scale(0.92);
+    }
+
+    .chat-name-close:focus-visible {
+      outline: 2px solid #ec4899;
+      outline-offset: 2px;
+    }
+
+    body.dark .chat-name-close {
+      background: #1e293b;
+      border-color: #334155;
+      color: #94a3b8;
+    }
+
+    body.dark .chat-name-close:hover {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #b91c1c;
     }
 
     body.dark .chat-name-card {
@@ -4967,7 +5031,12 @@
           <div class="chat-panel-status" id="chatPanelStatus"><span class="status-text">Đang hoạt động 💗</span></div>
         </div>
       </div>
-      <button class="chat-panel-close" type="button" id="chatPanelClose" aria-label="Đóng">×</button>
+      <button class="chat-panel-close" type="button" id="chatPanelClose" aria-label="Đóng" title="Đóng (ESC)">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+          <line x1="6" y1="18" x2="18" y2="6"></line>
+        </svg>
+      </button>
     </header>
 
     <div class="chat-panel-body" id="chatPanelBody">
@@ -4998,6 +5067,12 @@
 
   <div class="chat-name-overlay" id="chatNameOverlay">
     <div class="chat-name-card">
+      <button class="chat-name-close" type="button" id="chatNameClose" aria-label="Đóng" title="Đóng (ESC)">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+          <line x1="6" y1="18" x2="18" y2="6"></line>
+        </svg>
+      </button>
       <div class="chat-name-icon">👋</div>
       <h3>Xin chào!</h3>
       <p>Mình là Tiến. Bạn tên gì để mình gọi cho thân thiện nè?</p>
@@ -5008,7 +5083,6 @@
           placeholder="Tên của bạn..."
           maxlength="30"
           autocomplete="off"
-          required
         />
         <button type="submit" class="btn btn-primary">Bắt đầu chat 💗</button>
       </form>
@@ -5946,9 +6020,11 @@
       'use strict';
 
       const API_BASE = 'http://localhost:3001';
-      const STORAGE_KEY = 'profileChatSession_v1';
-      const NAME_KEY = 'profileChatName_v1';
-      const SESSION_DAYS = 7;
+    const STORAGE_KEY = 'profileChatSession_v1';
+    const NAME_KEY = 'profileChatName_v1';
+    const NAME_DISMISS_COUNT_KEY = 'profileChatNameDismissCount_v1';
+    const NAME_DISMISSED_KEY = 'profileChatNameDismissed_v1';
+    const SESSION_DAYS = 7;
 
       const launcherBtn = document.getElementById('chatLauncherBtn');
       const panel = document.getElementById('chatPanel');
@@ -5965,6 +6041,7 @@
       const nameOverlay = document.getElementById('chatNameOverlay');
       const nameForm = document.getElementById('chatNameForm');
       const nameInput = document.getElementById('chatNameInput');
+      const nameCloseBtn = document.getElementById('chatNameClose');
 
       let sessionId = null;
       let userName = null;
@@ -6006,13 +6083,45 @@
       function setStoredName(name) {
         try { localStorage.setItem(NAME_KEY, name); } catch (_) {}
       }
+      function getDismissCount() {
+        try {
+          const v = parseInt(localStorage.getItem(NAME_DISMISS_COUNT_KEY) || '0', 10);
+          return Number.isFinite(v) && v >= 0 ? v : 0;
+        } catch (_) { return 0; }
+      }
+      function isNamePromptDismissed() {
+        try { return localStorage.getItem(NAME_DISMISSED_KEY) === '1'; } catch (_) { return false; }
+      }
+      function incrementDismissCount() {
+        try {
+          const next = getDismissCount() + 1;
+          localStorage.setItem(NAME_DISMISS_COUNT_KEY, String(next));
+          if (next >= 2) localStorage.setItem(NAME_DISMISSED_KEY, '1');
+          return next;
+        } catch (_) { return 0; }
+      }
+      function markNamePromptDismissed() {
+        incrementDismissCount();
+      }
+      function clearNamePromptDismissed() {
+        try {
+          localStorage.removeItem(NAME_DISMISSED_KEY);
+          localStorage.removeItem(NAME_DISMISS_COUNT_KEY);
+        } catch (_) {}
+      }
+      function closeNamePrompt() {
+        nameOverlay.classList.remove('active');
+        nameOverlay.setAttribute('aria-hidden', 'true');
+      }
 
       function openPanel() {
         if (panelOpen) return;
         ensureSession();
         userName = getStoredName();
         if (!userName) {
+          if (isNamePromptDismissed()) return;
           nameOverlay.classList.add('active');
+          nameOverlay.setAttribute('aria-hidden', 'false');
           setTimeout(() => nameInput.focus(), 200);
           return;
         }
@@ -6022,6 +6131,17 @@
         panelOpen = true;
         document.body.style.overflow = 'hidden';
         loadHistory();
+      }
+
+      function closeNamePrompt() {
+        nameOverlay.classList.remove('active');
+        nameOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      function showNamePromptAgain() {
+        nameOverlay.classList.add('active');
+        nameOverlay.setAttribute('aria-hidden', 'false');
+        setTimeout(() => nameInput.focus(), 100);
       }
 
       function closePanel() {
@@ -6143,13 +6263,36 @@
       closeBtn.addEventListener('click', closePanel);
       overlay.addEventListener('click', closePanel);
 
+      document.addEventListener('keydown', (e) => {
+        if (e.key !== 'Escape') return;
+        if (nameOverlay.classList.contains('active')) {
+          incrementDismissCount();
+          closeNamePrompt();
+          return;
+        }
+        if (panelOpen) closePanel();
+      });
+
+      nameCloseBtn.addEventListener('click', () => {
+        incrementDismissCount();
+        closeNamePrompt();
+      });
+
+      nameOverlay.addEventListener('click', (e) => {
+        if (e.target === nameOverlay) {
+          incrementDismissCount();
+          closeNamePrompt();
+        }
+      });
+
       nameForm.addEventListener('submit', (e) => {
         e.preventDefault();
         const name = nameInput.value.trim();
         if (!name) return;
         userName = name;
         setStoredName(name);
-        nameOverlay.classList.remove('active');
+        clearNamePromptDismissed();
+        closeNamePrompt();
         panel.classList.add('open');
         panel.setAttribute('aria-hidden', 'false');
         overlay.classList.add('active');
